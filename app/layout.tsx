@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Instrument_Serif, Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const instrumentSerif = Instrument_Serif({
@@ -31,6 +32,7 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-[#0a0705] text-[#f5ede0] antialiased">
         {children}
+        <Analytics />
       </body>
     </html>
   );

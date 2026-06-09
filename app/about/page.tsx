@@ -5,7 +5,7 @@ export default function AboutPage() {
     <PageShell
       background="hero"
       title="About Canopy"
-      subtitle="A carbon footprint awareness platform built for the Prompt Hack challenge."
+      subtitle="A carbon footprint awareness platform for personal reflection and gentle change."
     >
       <div className="prose-invert max-w-3xl space-y-6 text-white/80">
         <section className="glass-card rounded-3xl p-8">
