@@ -7,16 +7,17 @@ import { PageShell } from "@/components/PageShell";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import { addLog } from "@/lib/storage";
 import { useCanopyData } from "@/hooks/useCanopyData";
+import { useHydrated } from "@/hooks/useHydrated";
 
 export default function ActionsPage() {
   const router = useRouter();
-  const { profile, actions, ready, refresh } = useCanopyData();
+  const hydrated = useHydrated();
+  const { profile, actions } = useCanopyData();
 
   useEffect(() => {
-    if (ready && !profile) {
-      router.replace("/onboarding");
-    }
-  }, [ready, profile, router]);
+    if (!hydrated || profile) return;
+    router.replace("/onboarding");
+  }, [hydrated, profile, router]);
 
   function handleLog(actionId: string, title: string, monthlySaving: number) {
     const dailySaving = -(monthlySaving / 30);
@@ -25,19 +26,19 @@ export default function ActionsPage() {
       label: title,
       kgCo2Delta: Math.round(dailySaving * 10) / 10,
     });
-    refresh();
   }
 
-  if (!ready || !profile) {
+  if (!profile) {
     return (
-      <PageShell title="Actions">
-        <p className="text-white/70">Loading…</p>
+      <PageShell staticBackground title="Actions">
+        <p className="text-[#f5ede0]/70">Loading…</p>
       </PageShell>
     );
   }
 
   return (
     <PageShell
+      staticBackground
       title="Recommended Actions"
       subtitle="Ranked by impact and feasibility for your profile. Your highest-emission categories are prioritized."
     >

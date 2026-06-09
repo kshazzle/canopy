@@ -10,8 +10,15 @@ export function FootprintGauge({ score, grade, monthlyKg }: FootprintGaugeProps)
 
   return (
     <div className="glass-card flex flex-col items-center rounded-3xl p-8">
-      <h2 className="font-display text-2xl text-white">Your Footprint Score</h2>
-      <div className="relative mt-6" role="img" aria-label={`Footprint score ${score} out of 100, grade ${grade}`}>
+      <h2 className="font-display text-2xl text-[#f5ede0]">Your monthly rhythm</h2>
+      <p className="mt-2 text-center text-sm text-[#f5ede0]/50">
+        A quiet snapshot — patterns, not a verdict
+      </p>
+      <div
+        className="relative mt-6"
+        role="img"
+        aria-label={`Footprint pattern indicator: grade ${grade}, ${score} out of 100`}
+      >
         <svg width="140" height="140" viewBox="0 0 120 120" aria-hidden="true">
           <circle
             cx="60"
@@ -39,9 +46,11 @@ export function FootprintGauge({ score, grade, monthlyKg }: FootprintGaugeProps)
           <span className="text-sm text-white/70">{score}/100</span>
         </div>
       </div>
-      <p className="mt-4 text-center text-white/80">
-        <span className="font-display text-3xl text-white">{monthlyKg}</span> kg CO₂
-        <span className="block text-sm">estimated this month</span>
+      <p className="mt-4 text-center text-[#f5ede0]/75">
+        <span className="font-display text-3xl text-[#f5ede0]">{monthlyKg}</span> kg
+        <span className="block text-sm text-[#f5ede0]/50">
+          estimated monthly impact
+        </span>
       </p>
     </div>
   );

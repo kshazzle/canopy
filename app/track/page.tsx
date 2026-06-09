@@ -5,25 +5,26 @@ import { useRouter } from "next/navigation";
 import { ActionChip } from "@/components/ActionChip";
 import { GlassButton } from "@/components/GlassButton";
 import { PageShell } from "@/components/PageShell";
+import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { TRACKABLE_ACTIONS } from "@/lib/constants";
 import { addLog } from "@/lib/storage";
 import { useCanopyData } from "@/hooks/useCanopyData";
+import { useHydrated } from "@/hooks/useHydrated";
 
 export default function TrackPage() {
   const router = useRouter();
-  const { profile, logs, ready, refresh } = useCanopyData();
+  const hydrated = useHydrated();
+  const { profile, logs } = useCanopyData();
   const [customKm, setCustomKm] = useState(10);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (ready && !profile) {
-      router.replace("/onboarding");
-    }
-  }, [ready, profile, router]);
+    if (!hydrated || profile) return;
+    router.replace("/onboarding");
+  }, [hydrated, profile, router]);
 
   function logAction(actionId: string, label: string, kgCo2Delta: number) {
     addLog({ actionId, label, kgCo2Delta });
-    refresh();
     setMessage(`Logged: ${label}`);
     setTimeout(() => setMessage(""), 3000);
   }
@@ -34,19 +35,22 @@ export default function TrackPage() {
     logAction("custom-distance", `Saved ${km} km of driving`, saved);
   }
 
-  if (!ready || !profile) {
+  if (!profile) {
     return (
-      <PageShell title="Track">
-        <p className="text-white/70">Loading…</p>
+      <PageShell staticBackground title="Track">
+        <p className="text-[#f5ede0]/70">Loading…</p>
       </PageShell>
     );
   }
 
   return (
     <PageShell
+      staticBackground
       title="Track Your Day"
       subtitle="Tap an action to log it. Every choice compounds toward a lighter footprint."
     >
+      <PrivacyNotice />
+
       <div
         className="mb-6 rounded-2xl border border-white/10 px-4 py-3 text-sm text-white/80"
         role="status"

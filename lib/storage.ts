@@ -4,6 +4,7 @@ import { calculateProfileFromQuiz } from "./emissions";
 
 const quizAnswersSchema = z.object({
   carKmPerWeek: z.number().min(0).max(2000),
+  vehicleType: z.enum(["petrol", "hybrid", "ev"]),
   transitKmPerWeek: z.number().min(0).max(2000),
   flightsPerYear: z.number().min(0).max(50),
   beefMealsPerWeek: z.number().min(0).max(21),
@@ -63,7 +64,8 @@ export function getProfile(): FootprintProfile | null {
 
 export function saveProfile(profile: FootprintProfile): void {
   if (!isBrowser()) return;
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  const validated = footprintProfileSchema.parse(profile);
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(validated));
   emitStorageChange();
 }
 
@@ -96,9 +98,15 @@ export function getLogs(): DailyLog[] {
   }
 }
 
+const MAX_LOG_ENTRIES = 500;
+
 export function saveLogs(logs: DailyLog[]): void {
   if (!isBrowser()) return;
-  localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+  const validated = logs
+    .map((item) => safeParse(dailyLogSchema, item))
+    .filter((item): item is DailyLog => item !== null)
+    .slice(0, MAX_LOG_ENTRIES);
+  localStorage.setItem(LOGS_KEY, JSON.stringify(validated));
   emitStorageChange();
 }
 
@@ -125,3 +133,4 @@ export function addLog(log: Omit<DailyLog, "id" | "date"> & { date?: string }): 
 export function getCompletedActionIds(): string[] {
   return [...new Set(getLogs().map((log) => log.actionId))];
 }
+

@@ -5,8 +5,11 @@ export type FootprintCategory =
   | "shopping"
   | "waste";
 
+export type VehicleType = "petrol" | "hybrid" | "ev";
+
 export interface QuizAnswers {
   carKmPerWeek: number;
+  vehicleType: VehicleType;
   transitKmPerWeek: number;
   flightsPerYear: number;
   beefMealsPerWeek: number;

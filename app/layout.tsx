@@ -29,7 +29,7 @@ export default function RootLayout({
       lang="en"
       className={`${instrumentSerif.variable} ${inter.variable} h-full`}
     >
-      <body className="min-h-full bg-black text-white antialiased">
+      <body className="min-h-full bg-[#0a0705] text-[#f5ede0] antialiased">
         {children}
       </body>
     </html>

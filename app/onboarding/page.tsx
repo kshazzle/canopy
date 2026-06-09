@@ -4,8 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { GlassButton } from "@/components/GlassButton";
 import { PageShell } from "@/components/PageShell";
+import { QuizProgress } from "@/components/QuizProgress";
+import { QuizChoiceStep } from "@/components/QuizChoiceStep";
 import { QuizStep } from "@/components/QuizStep";
-import { DEFAULT_QUIZ_ANSWERS, QUIZ_QUESTIONS } from "@/lib/constants";
+import {
+  DEFAULT_QUIZ_ANSWERS,
+  isChoiceQuestion,
+  QUIZ_QUESTIONS,
+} from "@/lib/constants";
 import type { QuizAnswers } from "@/lib/types";
 import { saveProfileFromQuiz } from "@/lib/storage";
 
@@ -17,17 +23,17 @@ export default function OnboardingPage() {
   const current = QUIZ_QUESTIONS[step];
   const isLast = step === QUIZ_QUESTIONS.length - 1;
 
-  function updateAnswer(value: number) {
+  function updateAnswer<K extends keyof QuizAnswers>(id: K, value: QuizAnswers[K]) {
     setAnswers((prev) => ({
       ...prev,
-      [current.id]: value,
+      [id]: value,
     }));
   }
 
   function handleNext() {
     if (isLast) {
       saveProfileFromQuiz(answers);
-      router.push("/dashboard");
+      router.push("/dashboard?noticed=1");
       return;
     }
     setStep((s) => s + 1);
@@ -39,38 +45,70 @@ export default function OnboardingPage() {
 
   return (
     <PageShell
-      title="Carbon Footprint Assessment"
-      subtitle="Answer a few quick questions to build your personalized profile. Takes about 3 minutes."
+      fitViewport
+      compactTitle
+      staticBackground
+      title="Discover Your Rhythm"
+      subtitle="Carbon Footprint Assessment"
+      centered
     >
-      <div className="mx-auto max-w-2xl">
-        <p className="mb-6 text-sm text-white/50" aria-live="polite">
-          Step {step + 1} of {QUIZ_QUESTIONS.length}
-        </p>
-
-        <QuizStep
-          label={current.label}
-          value={answers[current.id]}
-          min={current.min}
-          max={current.max}
-          step={current.step}
-          unit={current.unit}
-          onChange={updateAnswer}
+      <div className="flex w-full max-w-xl min-h-0 flex-1 flex-col justify-center gap-4 sm:gap-5">
+        <QuizProgress
+          static
+          step={step}
+          total={QUIZ_QUESTIONS.length}
+          category={current.category}
         />
 
-        <div className="mt-8 flex justify-between gap-4">
+        <h2
+          key={step}
+          className="font-display shrink-0 text-center text-[clamp(1.55rem,4.8vw,2.35rem)] leading-[1.15] tracking-[-0.02em] text-[#faf5ec] [text-shadow:0_1px_14px_rgba(10,7,5,0.5)] sm:leading-snug [@media(max-height:740px)]:text-[1.4rem]"
+        >
+          {current.label}
+        </h2>
+
+        {isChoiceQuestion(current) ? (
+          <QuizChoiceStep
+            key={`answer-${step}`}
+            className="shrink-0"
+            category={current.category}
+            value={answers.vehicleType}
+            options={current.options}
+            onChange={(value) => updateAnswer("vehicleType", value)}
+          />
+        ) : (
+          <QuizStep
+            key={`answer-${step}`}
+            static
+            className="shrink-0"
+            category={current.category}
+            value={answers[current.id]}
+            min={current.min}
+            max={current.max}
+            step={current.step}
+            unit={current.unit}
+            onChange={(value) => updateAnswer(current.id, value)}
+          />
+        )}
+
+        <div className="flex shrink-0 items-center justify-between gap-4 pt-1">
           <GlassButton
             onClick={handleBack}
-            className="px-8 py-3 text-sm"
+            variant="ghost"
+            className="px-6 py-2.5 text-sm sm:px-8 sm:py-3"
             ariaLabel="Go to previous question"
+            disabled={step === 0}
           >
             Back
           </GlassButton>
           <GlassButton
             onClick={handleNext}
-            className="px-8 py-3 text-sm"
+            variant="premium"
+            motionless
+            className="px-8 py-3 text-sm font-medium tracking-wide sm:px-10 sm:py-3.5"
             ariaLabel={isLast ? "Complete assessment" : "Go to next question"}
           >
-            {isLast ? "See My Footprint" : "Next"}
+            {isLast ? "See What We Noticed" : "Continue"}
           </GlassButton>
         </div>
       </div>

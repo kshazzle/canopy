@@ -21,7 +21,34 @@ type CanopySnapshot = {
   logs: DailyLog[];
 };
 
+const SERVER_SNAPSHOT: CanopySnapshot = { profile: null, logs: [] };
+
 const listeners = new Set<() => void>();
+
+let cachedSnapshot: CanopySnapshot = SERVER_SNAPSHOT;
+let cacheKey = "";
+
+function buildCacheKey(profile: FootprintProfile | null, logs: DailyLog[]): string {
+  return JSON.stringify({ profile, logs });
+}
+
+function getSnapshot(): CanopySnapshot {
+  const profile = getProfile();
+  const logs = getLogs();
+  const key = buildCacheKey(profile, logs);
+
+  if (key === cacheKey) {
+    return cachedSnapshot;
+  }
+
+  cacheKey = key;
+  cachedSnapshot = { profile, logs };
+  return cachedSnapshot;
+}
+
+function getServerSnapshot(): CanopySnapshot {
+  return SERVER_SNAPSHOT;
+}
 
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
@@ -36,19 +63,17 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-function getSnapshot(): CanopySnapshot {
-  return {
-    profile: getProfile(),
-    logs: getLogs(),
-  };
-}
-
-function getServerSnapshot(): CanopySnapshot {
-  return { profile: null, logs: [] };
-}
-
 export function notifyCanopyUpdate(): void {
+  cacheKey = "";
   listeners.forEach((listener) => listener());
+}
+
+export function useProfile(): FootprintProfile | null {
+  return useSyncExternalStore(
+    subscribe,
+    () => getSnapshot().profile,
+    () => null,
+  );
 }
 
 export function useCanopyData() {
@@ -62,7 +87,7 @@ export function useCanopyData() {
     notifyCanopyUpdate();
   }, []);
 
-  const ready = profile !== null || logs.length > 0 || typeof window !== "undefined";
+  const ready = profile !== null || logs.length > 0;
 
   const context: AssistantContext | null = profile
     ? {

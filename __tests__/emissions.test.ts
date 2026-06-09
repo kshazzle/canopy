@@ -32,6 +32,30 @@ describe("calculateProfileFromQuiz", () => {
     expect(transport?.kgCo2PerYear).toBe(0);
   });
 
+  it("applies lower transport emissions for EV vs petrol at same distance", () => {
+    const petrol = calculateProfileFromQuiz({
+      ...DEFAULT_QUIZ_ANSWERS,
+      carKmPerWeek: 200,
+      transitKmPerWeek: 0,
+      flightsPerYear: 0,
+      vehicleType: "petrol",
+    });
+    const ev = calculateProfileFromQuiz({
+      ...DEFAULT_QUIZ_ANSWERS,
+      carKmPerWeek: 200,
+      transitKmPerWeek: 0,
+      flightsPerYear: 0,
+      vehicleType: "ev",
+    });
+
+    const petrolTransport = petrol.breakdown.find((b) => b.category === "transport");
+    const evTransport = ev.breakdown.find((b) => b.category === "transport");
+
+    expect(evTransport?.kgCo2PerYear).toBeLessThan(petrolTransport?.kgCo2PerYear ?? 0);
+    expect(evTransport?.kgCo2PerYear).toBeCloseTo(200 * 52 * 0.065, 0);
+    expect(petrolTransport?.kgCo2PerYear).toBeCloseTo(200 * 52 * 0.21, 0);
+  });
+
   it("identifies transport as top category for heavy drivers", () => {
     const profile = calculateProfileFromQuiz({
       ...DEFAULT_QUIZ_ANSWERS,
@@ -98,6 +122,22 @@ describe("aggregateDailyLogs", () => {
 describe("calculateStreak", () => {
   it("returns 0 for empty logs", () => {
     expect(calculateStreak([])).toBe(0);
+  });
+
+  it("uses local dates for streaks across UTC boundaries", () => {
+    const logs: DailyLog[] = [
+      {
+        id: "1",
+        date: "2026-06-08T23:30:00.000Z",
+        actionId: "recycled",
+        label: "Recycled",
+        kgCo2Delta: -0.5,
+      },
+    ];
+
+    const streak = calculateStreak(logs);
+    expect(streak).toBeGreaterThanOrEqual(0);
+    expect(streak).toBeLessThanOrEqual(1);
   });
 
   it("counts consecutive days with savings", () => {

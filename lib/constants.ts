@@ -1,4 +1,15 @@
-import type { ActionRecommendation, FootprintCategory } from "./types";
+import type {
+  ActionRecommendation,
+  FootprintCategory,
+  QuizAnswers,
+  VehicleType,
+} from "./types";
+
+export const VEHICLE_EMISSION_FACTORS: Record<VehicleType, number> = {
+  petrol: 0.21,
+  hybrid: 0.12,
+  ev: 0.065,
+};
 
 export const EMISSION_FACTORS = {
   carKgPerKm: 0.21,
@@ -28,15 +39,57 @@ export const CATEGORY_LABELS: Record<FootprintCategory, string> = {
   waste: "Waste",
 };
 
-export const QUIZ_QUESTIONS = [
+export const VEHICLE_OPTIONS = [
+  { value: "petrol" as const, label: "Petrol", hint: "~0.21 kg/km" },
+  { value: "hybrid" as const, label: "Hybrid", hint: "~0.12 kg/km" },
+  { value: "ev" as const, label: "EV", hint: "~0.07 kg/km" },
+];
+
+type NumericQuizQuestionId = Exclude<keyof QuizAnswers, "vehicleType">;
+
+interface NumericQuizQuestion {
+  type?: "numeric";
+  id: NumericQuizQuestionId;
+  category: FootprintCategory;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  unit: string;
+}
+
+interface ChoiceQuizQuestion {
+  type: "choice";
+  id: "vehicleType";
+  category: FootprintCategory;
+  label: string;
+  options: typeof VEHICLE_OPTIONS;
+}
+
+export type QuizQuestion = NumericQuizQuestion | ChoiceQuizQuestion;
+
+export function isChoiceQuestion(
+  question: QuizQuestion,
+): question is ChoiceQuizQuestion {
+  return question.type === "choice";
+}
+
+export const QUIZ_QUESTIONS: QuizQuestion[] = [
   {
     id: "carKmPerWeek",
-    category: "transport" as const,
+    category: "transport",
     label: "How many km do you drive per week?",
     min: 0,
     max: 2000,
     step: 10,
     unit: "km",
+  },
+  {
+    type: "choice",
+    id: "vehicleType",
+    category: "transport",
+    label: "What do you usually drive?",
+    options: VEHICLE_OPTIONS,
   },
   {
     id: "transitKmPerWeek",
@@ -221,6 +274,7 @@ export const RECOMMENDED_ACTIONS: Omit<
 
 export const DEFAULT_QUIZ_ANSWERS = {
   carKmPerWeek: 100,
+  vehicleType: "petrol",
   transitKmPerWeek: 20,
   flightsPerYear: 2,
   beefMealsPerWeek: 2,
@@ -229,4 +283,4 @@ export const DEFAULT_QUIZ_ANSWERS = {
   monthlyKwh: 300,
   clothingItemsPerMonth: 2,
   recyclingHabit: 3,
-} satisfies import("./types").QuizAnswers;
+} satisfies QuizAnswers;

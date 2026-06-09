@@ -1,4 +1,4 @@
-import { EMISSION_FACTORS, EQUIVALENTS } from "./constants";
+import { EMISSION_FACTORS, EQUIVALENTS, VEHICLE_EMISSION_FACTORS } from "./constants";
 import type {
   CategoryBreakdown,
   DailyLog,
@@ -14,8 +14,9 @@ function roundKg(value: number): number {
 }
 
 function calculateCategoryTotals(answers: QuizAnswers): Record<FootprintCategory, number> {
+  const carKgPerKm = VEHICLE_EMISSION_FACTORS[answers.vehicleType];
   const transport =
-    answers.carKmPerWeek * 52 * EMISSION_FACTORS.carKgPerKm +
+    answers.carKmPerWeek * 52 * carKgPerKm +
     answers.transitKmPerWeek * 52 * EMISSION_FACTORS.transitKgPerKm +
     answers.flightsPerYear *
       EMISSION_FACTORS.flightAvgKm *
@@ -139,7 +140,7 @@ export function calculateStreak(logs: DailyLog[]): number {
     ...new Set(
       logs
         .filter((log) => log.kgCo2Delta < 0)
-        .map((log) => log.date.slice(0, 10)),
+        .map((log) => toLocalDateString(new Date(log.date))),
     ),
   ].sort((a, b) => b.localeCompare(a));
 

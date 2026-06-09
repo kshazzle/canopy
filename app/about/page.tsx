@@ -3,6 +3,7 @@ import { PageShell } from "@/components/PageShell";
 export default function AboutPage() {
   return (
     <PageShell
+      background="hero"
       title="About Canopy"
       subtitle="A carbon footprint awareness platform built for the Prompt Hack challenge."
     >
