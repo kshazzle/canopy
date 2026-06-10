@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { getInsights, getTopAction, scoreAction } from "@/lib/assistant";
+import {
+  getInsights,
+  getPersonalizedActions,
+  getTopAction,
+  scoreAction,
+} from "@/lib/assistant";
 import { DEFAULT_QUIZ_ANSWERS, RECOMMENDED_ACTIONS } from "@/lib/constants";
 import { calculateProfileFromQuiz } from "@/lib/emissions";
 import type { AssistantContext, DailyLog } from "@/lib/types";
@@ -83,6 +88,17 @@ describe("scoreAction", () => {
     const energyScore = scoreAction(energyAction, context);
 
     expect(transportScore).toBeGreaterThan(energyScore);
+  });
+});
+
+describe("getPersonalizedActions", () => {
+  it("orders actions by descending score for transport-heavy profiles", () => {
+    const actions = getPersonalizedActions(buildContext());
+    expect(actions.length).toBeGreaterThan(1);
+    for (let i = 1; i < actions.length; i++) {
+      expect(actions[i - 1].score).toBeGreaterThanOrEqual(actions[i].score);
+    }
+    expect(actions[0].category).toBe("transport");
   });
 });
 

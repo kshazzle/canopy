@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { getInsights, getPersonalizedActions } from "@/lib/assistant";
 import {
   aggregateDailyLogs,
@@ -9,11 +9,7 @@ import {
   getFootprintScore,
   toEquivalents,
 } from "@/lib/emissions";
-import {
-  getCompletedActionIds,
-  getLogs,
-  getProfile,
-} from "@/lib/storage";
+import { getLogs, getProfile } from "@/lib/storage";
 import type { AssistantContext, DailyLog, FootprintProfile } from "@/lib/types";
 
 type CanopySnapshot = {
@@ -29,7 +25,9 @@ let cachedSnapshot: CanopySnapshot = SERVER_SNAPSHOT;
 let cacheKey = "";
 
 function buildCacheKey(profile: FootprintProfile | null, logs: DailyLog[]): string {
-  return JSON.stringify({ profile, logs });
+  if (!profile && logs.length === 0) return "empty";
+  const latestLogId = logs[0]?.id ?? "";
+  return `${profile?.id ?? "none"}:${logs.length}:${latestLogId}`;
 }
 
 function getSnapshot(): CanopySnapshot {
@@ -89,21 +87,47 @@ export function useCanopyData() {
 
   const ready = profile !== null || logs.length > 0;
 
-  const context: AssistantContext | null = profile
-    ? {
-        profile,
-        logs,
-        streak: calculateStreak(logs),
-        completedActions: getCompletedActionIds(),
-      }
-    : null;
+  const completedActions = useMemo(
+    () => [...new Set(logs.map((log) => log.actionId))],
+    [logs],
+  );
 
-  const aggregate = profile ? aggregateDailyLogs(profile, logs) : null;
-  const insights = context ? getInsights(context) : [];
-  const actions = context ? getPersonalizedActions(context) : [];
-  const equivalents = profile ? toEquivalents(profile.annualKgCo2) : null;
-  const grade = profile ? getFootprintGrade(profile.annualKgCo2) : null;
-  const score = profile ? getFootprintScore(profile.annualKgCo2) : null;
+  const context = useMemo<AssistantContext | null>(() => {
+    if (!profile) return null;
+    return {
+      profile,
+      logs,
+      streak: calculateStreak(logs),
+      completedActions,
+    };
+  }, [profile, logs, completedActions]);
+
+  const aggregate = useMemo(
+    () => (profile ? aggregateDailyLogs(profile, logs) : null),
+    [profile, logs],
+  );
+
+  const insights = useMemo(() => (context ? getInsights(context) : []), [context]);
+
+  const actions = useMemo(
+    () => (context ? getPersonalizedActions(context) : []),
+    [context],
+  );
+
+  const equivalents = useMemo(
+    () => (profile ? toEquivalents(profile.annualKgCo2) : null),
+    [profile],
+  );
+
+  const grade = useMemo(
+    () => (profile ? getFootprintGrade(profile.annualKgCo2) : null),
+    [profile],
+  );
+
+  const score = useMemo(
+    () => (profile ? getFootprintScore(profile.annualKgCo2) : null),
+    [profile],
+  );
 
   return {
     profile,

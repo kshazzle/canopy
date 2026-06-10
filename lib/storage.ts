@@ -33,13 +33,21 @@ const footprintProfileSchema = z.object({
 const dailyLogSchema = z.object({
   id: z.string(),
   date: z.string(),
-  actionId: z.string(),
-  label: z.string(),
-  kgCo2Delta: z.number(),
+  actionId: z.string().max(64),
+  label: z.string().max(120),
+  kgCo2Delta: z.number().min(-500).max(500),
 });
 
 const PROFILE_KEY = "canopy-profile";
 const LOGS_KEY = "canopy-logs";
+const MAX_LOG_ENTRIES = 500;
+
+export class StorageQuotaError extends Error {
+  constructor() {
+    super("Local storage quota exceeded");
+    this.name = "StorageQuotaError";
+  }
+}
 
 function isBrowser(): boolean {
   return typeof window !== "undefined";
@@ -48,6 +56,17 @@ function isBrowser(): boolean {
 function safeParse<T>(schema: z.ZodType<T>, value: unknown): T | null {
   const result = schema.safeParse(value);
   return result.success ? result.data : null;
+}
+
+function setLocalStorageItem(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "QuotaExceededError") {
+      throw new StorageQuotaError();
+    }
+    throw error;
+  }
 }
 
 export function getProfile(): FootprintProfile | null {
@@ -65,19 +84,15 @@ export function getProfile(): FootprintProfile | null {
 export function saveProfile(profile: FootprintProfile): void {
   if (!isBrowser()) return;
   const validated = footprintProfileSchema.parse(profile);
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(validated));
+  setLocalStorageItem(PROFILE_KEY, JSON.stringify(validated));
   emitStorageChange();
 }
 
 export function saveProfileFromQuiz(answers: QuizAnswers): FootprintProfile {
-  const profile = calculateProfileFromQuiz(answers);
+  const validatedAnswers = quizAnswersSchema.parse(answers);
+  const profile = calculateProfileFromQuiz(validatedAnswers);
   saveProfile(profile);
   return profile;
-}
-
-export function clearProfile(): void {
-  if (!isBrowser()) return;
-  localStorage.removeItem(PROFILE_KEY);
 }
 
 export function getLogs(): DailyLog[] {
@@ -98,15 +113,13 @@ export function getLogs(): DailyLog[] {
   }
 }
 
-const MAX_LOG_ENTRIES = 500;
-
 export function saveLogs(logs: DailyLog[]): void {
   if (!isBrowser()) return;
   const validated = logs
     .map((item) => safeParse(dailyLogSchema, item))
     .filter((item): item is DailyLog => item !== null)
     .slice(0, MAX_LOG_ENTRIES);
-  localStorage.setItem(LOGS_KEY, JSON.stringify(validated));
+  setLocalStorageItem(LOGS_KEY, JSON.stringify(validated));
   emitStorageChange();
 }
 
@@ -116,13 +129,13 @@ function emitStorageChange(): void {
 }
 
 export function addLog(log: Omit<DailyLog, "id" | "date"> & { date?: string }): DailyLog {
-  const entry: DailyLog = {
+  const entry = dailyLogSchema.parse({
     id: crypto.randomUUID(),
     date: log.date ?? new Date().toISOString(),
     actionId: log.actionId,
     label: log.label,
     kgCo2Delta: log.kgCo2Delta,
-  };
+  });
 
   const logs = getLogs();
   logs.unshift(entry);
@@ -130,7 +143,6 @@ export function addLog(log: Omit<DailyLog, "id" | "date"> & { date?: string }): 
   return entry;
 }
 
-export function getCompletedActionIds(): string[] {
-  return [...new Set(getLogs().map((log) => log.actionId))];
+export function getCompletedActionIds(logs: DailyLog[]): string[] {
+  return [...new Set(logs.map((log) => log.actionId))];
 }
-

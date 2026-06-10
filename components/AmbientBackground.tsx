@@ -51,7 +51,7 @@ export function AmbientBackground({ intensity = "hero" }: AmbientBackgroundProps
         loop
         muted
         playsInline
-        preload="metadata"
+        preload="none"
         poster={HERO_POSTER}
         src={HERO_VIDEO_MP4}
         onLoadedData={tryPlay}

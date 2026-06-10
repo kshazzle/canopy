@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" fill="none" role="img" aria-label="Canopy">
+  <rect width="180" height="180" rx="40" fill="#0a0705"/>
+  <circle cx="90" cy="90" r="72" stroke="#c4a574" stroke-opacity="0.2" stroke-width="2"/>
+  <path
+    d="M90 38 C120 58 132 82 90 138 C48 82 60 58 90 38 Z"
+    fill="url(#canopy-leaf-lg)"
+  />
+  <path
+    d="M90 52 L90 122"
+    stroke="#f5ede0"
+    stroke-opacity="0.26"
+    stroke-width="3"
+    stroke-linecap="round"
+  />
+  <defs>
+    <linearGradient id="canopy-leaf-lg" x1="90" y1="38" x2="90" y2="138" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d4b88a"/>
+      <stop offset="0.45" stop-color="#9aad78"/>
+      <stop offset="1" stop-color="#5f7d4f"/>
+    </linearGradient>
+  </defs>
+</svg>

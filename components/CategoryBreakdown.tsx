@@ -13,15 +13,29 @@ const COLORS: Record<string, string> = {
   waste: "bg-white/25",
 };
 
+function buildChartLabel(sorted: Breakdown[]): string {
+  return sorted
+    .map(
+      (item) =>
+        `${CATEGORY_LABELS[item.category]} ${item.percentage}% (${item.kgCo2PerYear} kg per year)`,
+    )
+    .join(", ");
+}
+
 export function CategoryBreakdown({ breakdown }: CategoryBreakdownProps) {
   const sorted = [...breakdown].sort((a, b) => b.percentage - a.percentage);
+  const chartLabel = buildChartLabel(sorted);
 
   return (
     <div className="glass-card rounded-3xl p-8">
       <h2 className="font-display text-2xl text-white">Emission Breakdown</h2>
       <p className="mt-2 text-sm text-white/70">Where your carbon footprint comes from</p>
 
-      <div className="mt-6 flex h-4 w-full overflow-hidden rounded-full bg-white/10">
+      <div
+        className="mt-6 flex h-4 w-full overflow-hidden rounded-full bg-white/10"
+        role="img"
+        aria-label={`Footprint breakdown by category: ${chartLabel}`}
+      >
         {sorted.map((item) => (
           <div
             key={item.category}
@@ -32,7 +46,7 @@ export function CategoryBreakdown({ breakdown }: CategoryBreakdownProps) {
         ))}
       </div>
 
-      <ul className="mt-6 space-y-4">
+      <ul className="mt-6 space-y-4" aria-label="Category breakdown details">
         {sorted.map((item) => (
           <li key={item.category} className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-3">
@@ -44,7 +58,7 @@ export function CategoryBreakdown({ breakdown }: CategoryBreakdownProps) {
             </div>
             <div className="text-right text-white/80">
               <span className="block">{item.percentage}%</span>
-              <span className="text-xs text-white/50">{item.kgCo2PerYear} kg/yr</span>
+              <span className="text-xs text-white/55">{item.kgCo2PerYear} kg/yr</span>
             </div>
           </li>
         ))}

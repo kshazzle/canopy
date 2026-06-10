@@ -4,8 +4,10 @@ import {
   addLog,
   getLogs,
   getProfile,
+  saveLogs,
   saveProfile,
   saveProfileFromQuiz,
+  StorageQuotaError,
 } from "@/lib/storage";
 import type { FootprintProfile } from "@/lib/types";
 
@@ -114,5 +116,38 @@ describe("storage", () => {
     const logs = getLogs();
     expect(logs).toHaveLength(1);
     expect(logs[0].kgCo2Delta).toBe(-4.5);
+  });
+
+  it("rejects invalid log payloads on write", () => {
+    expect(() =>
+      addLog({
+        actionId: "x".repeat(80),
+        label: "Bad",
+        kgCo2Delta: -1,
+      }),
+    ).toThrow();
+  });
+
+  it("caps stored logs at 500 entries", () => {
+    const logs = Array.from({ length: 505 }, (_, index) => ({
+      id: `log-${index}`,
+      date: "2026-06-08T12:00:00.000Z",
+      actionId: "bike-instead",
+      label: "Biked",
+      kgCo2Delta: -2.1,
+    }));
+
+    localStorage.setItem("canopy-logs", JSON.stringify(logs));
+    saveLogs(getLogs());
+
+    expect(getLogs()).toHaveLength(500);
+  });
+
+  it("throws when localStorage quota is exceeded", () => {
+    vi.spyOn(localStorage, "setItem").mockImplementation(() => {
+      throw new DOMException("Quota exceeded", "QuotaExceededError");
+    });
+
+    expect(() => saveProfile(validProfile)).toThrow(StorageQuotaError);
   });
 });
