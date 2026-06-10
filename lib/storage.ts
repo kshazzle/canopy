@@ -5,11 +5,13 @@ import {
   footprintProfileSchema,
   quizAnswersSchema,
 } from "./schemas";
+import { parseOrNull } from "./validation";
 
 const PROFILE_KEY = "canopy-profile";
 const LOGS_KEY = "canopy-logs";
 const MAX_LOG_ENTRIES = 500;
 
+/** Thrown when browser localStorage quota is exceeded. */
 export class StorageQuotaError extends Error {
   constructor() {
     super("Local storage quota exceeded");
@@ -19,11 +21,6 @@ export class StorageQuotaError extends Error {
 
 function isBrowser(): boolean {
   return typeof window !== "undefined";
-}
-
-function safeParse<T>(schema: { safeParse: (value: unknown) => { success: boolean; data?: T } }, value: unknown): T | null {
-  const result = schema.safeParse(value);
-  return result.success ? (result.data as T) : null;
 }
 
 function setLocalStorageItem(key: string, value: string): void {
@@ -49,6 +46,7 @@ function withProfileIntegrity(profile: FootprintProfile): FootprintProfile {
   };
 }
 
+/** Read the saved footprint profile, or null if missing or invalid. */
 export function getProfile(): FootprintProfile | null {
   if (!isBrowser()) return null;
 
@@ -56,7 +54,7 @@ export function getProfile(): FootprintProfile | null {
     const raw = localStorage.getItem(PROFILE_KEY);
     if (!raw) return null;
 
-    const parsed = safeParse(footprintProfileSchema, JSON.parse(raw));
+    const parsed = parseOrNull(footprintProfileSchema, JSON.parse(raw));
     if (!parsed) {
       purgeKey(PROFILE_KEY);
       return null;
@@ -69,15 +67,15 @@ export function getProfile(): FootprintProfile | null {
   }
 }
 
+/** Persist a footprint profile after schema validation and integrity checks. */
 export function saveProfile(profile: FootprintProfile): void {
   if (!isBrowser()) return;
-  const validated = footprintProfileSchema.parse(profile);
-  const integrity = withProfileIntegrity(validated);
-  footprintProfileSchema.parse(integrity);
+  const integrity = footprintProfileSchema.parse(withProfileIntegrity(profile));
   setLocalStorageItem(PROFILE_KEY, JSON.stringify(integrity));
   emitStorageChange();
 }
 
+/** Calculate, validate, and store a profile from quiz answers. */
 export function saveProfileFromQuiz(answers: QuizAnswers): FootprintProfile {
   const validatedAnswers = quizAnswersSchema.parse(answers);
   const profile = calculateProfileFromQuiz(validatedAnswers);
@@ -85,6 +83,7 @@ export function saveProfileFromQuiz(answers: QuizAnswers): FootprintProfile {
   return profile;
 }
 
+/** Read validated daily logs from local storage. */
 export function getLogs(): DailyLog[] {
   if (!isBrowser()) return [];
 
@@ -99,7 +98,7 @@ export function getLogs(): DailyLog[] {
     }
 
     const logs = parsed
-      .map((item) => safeParse(dailyLogSchema, item))
+      .map((item) => parseOrNull(dailyLogSchema, item))
       .filter((item): item is DailyLog => item !== null);
 
     if (logs.length === 0 && parsed.length > 0) {
@@ -113,10 +112,11 @@ export function getLogs(): DailyLog[] {
   }
 }
 
+/** Persist validated logs (capped at {@link MAX_LOG_ENTRIES}). */
 export function saveLogs(logs: DailyLog[]): void {
   if (!isBrowser()) return;
   const validated = logs
-    .map((item) => safeParse(dailyLogSchema, item))
+    .map((item) => parseOrNull(dailyLogSchema, item))
     .filter((item): item is DailyLog => item !== null)
     .slice(0, MAX_LOG_ENTRIES);
   setLocalStorageItem(LOGS_KEY, JSON.stringify(validated));
@@ -128,6 +128,7 @@ function emitStorageChange(): void {
   window.dispatchEvent(new Event("canopy-storage-update"));
 }
 
+/** Append a validated log entry and persist the updated list. */
 export function addLog(log: Omit<DailyLog, "id" | "date"> & { date?: string }): DailyLog {
   const entry = dailyLogSchema.parse({
     id: crypto.randomUUID(),

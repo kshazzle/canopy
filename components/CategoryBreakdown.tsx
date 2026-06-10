@@ -1,17 +1,10 @@
 import { CATEGORY_LABELS } from "@/lib/constants";
+import { CATEGORY_BAR_COLORS } from "@/lib/category-styles";
 import type { CategoryBreakdown as Breakdown } from "@/lib/types";
 
 interface CategoryBreakdownProps {
   breakdown: Breakdown[];
 }
-
-const COLORS: Record<string, string> = {
-  transport: "bg-white",
-  diet: "bg-white/80",
-  energy: "bg-white/60",
-  shopping: "bg-white/40",
-  waste: "bg-white/25",
-};
 
 function buildChartLabel(sorted: Breakdown[]): string {
   return sorted
@@ -39,7 +32,7 @@ export function CategoryBreakdown({ breakdown }: CategoryBreakdownProps) {
         {sorted.map((item) => (
           <div
             key={item.category}
-            className={`${COLORS[item.category]} h-full`}
+            className={`${CATEGORY_BAR_COLORS[item.category]} h-full`}
             style={{ width: `${item.percentage}%` }}
             title={`${CATEGORY_LABELS[item.category]}: ${item.percentage}%`}
           />
@@ -51,7 +44,7 @@ export function CategoryBreakdown({ breakdown }: CategoryBreakdownProps) {
           <li key={item.category} className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-3">
               <span
-                className={`inline-block h-3 w-3 rounded-full ${COLORS[item.category]}`}
+                className={`inline-block h-3 w-3 rounded-full ${CATEGORY_BAR_COLORS[item.category]}`}
                 aria-hidden="true"
               />
               <span className="text-white">{CATEGORY_LABELS[item.category]}</span>

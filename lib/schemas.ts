@@ -1,5 +1,8 @@
 import { z } from "zod";
+import type { QuizAnswers } from "./types";
 import { KNOWN_ACTION_IDS } from "./constants";
+
+export type { QuizAnswers };
 
 export const quizAnswersSchema = z.object({
   carKmPerWeek: z.number().min(0).max(2000),

@@ -1,4 +1,5 @@
 import { MONTHLY_REDUCTION_TARGET_PERCENT, RECOMMENDED_ACTIONS } from "./constants";
+import { capitalize } from "./utils";
 import {
   aggregateDailyLogs,
   daysSinceLastLog,
@@ -153,8 +154,4 @@ export function getInsights(context: AssistantContext): Insight[] {
   }
 
   return insights.sort((a, b) => a.priority - b.priority);
-}
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
 }

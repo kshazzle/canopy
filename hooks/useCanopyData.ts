@@ -9,6 +9,7 @@ import {
   getFootprintScore,
   toEquivalents,
 } from "@/lib/emissions";
+import type { CanopyData } from "@/hooks/canopy-data-types";
 import { getCompletedActionIds, getLogs, getProfile } from "@/lib/storage";
 import type { AssistantContext, DailyLog, FootprintProfile } from "@/lib/types";
 
@@ -61,11 +62,6 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-export function notifyCanopyUpdate(): void {
-  cacheKey = "";
-  listeners.forEach((listener) => listener());
-}
-
 export function useProfile(): FootprintProfile | null {
   return useSyncExternalStore(
     subscribe,
@@ -74,7 +70,7 @@ export function useProfile(): FootprintProfile | null {
   );
 }
 
-export function useCanopyData() {
+export function useCanopyData(): CanopyData {
   const { profile, logs } = useSyncExternalStore(
     subscribe,
     getSnapshot,
