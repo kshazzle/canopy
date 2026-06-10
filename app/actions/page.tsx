@@ -1,34 +1,38 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { GlassButton } from "@/components/GlassButton";
 import { PageShell } from "@/components/PageShell";
 import { CATEGORY_LABELS } from "@/lib/constants";
-import { addLog } from "@/lib/storage";
+import { addLog, StorageQuotaError } from "@/lib/storage";
 import { useCanopyData } from "@/hooks/useCanopyData";
-import { useHydrated } from "@/hooks/useHydrated";
+import { useRequireProfile } from "@/hooks/useRequireProfile";
 
 export default function ActionsPage() {
-  const router = useRouter();
-  const hydrated = useHydrated();
   const { profile, actions } = useCanopyData();
-
-  useEffect(() => {
-    if (!hydrated || profile) return;
-    router.replace("/onboarding");
-  }, [hydrated, profile, router]);
+  const { hydrated } = useRequireProfile();
+  const [message, setMessage] = useState("");
 
   function handleLog(actionId: string, title: string, monthlySaving: number) {
     const dailySaving = -(monthlySaving / 30);
-    addLog({
-      actionId,
-      label: title,
-      kgCo2Delta: Math.round(dailySaving * 10) / 10,
-    });
+    try {
+      addLog({
+        actionId,
+        label: title,
+        kgCo2Delta: Math.round(dailySaving * 10) / 10,
+      });
+      setMessage(`Logged: ${title}`);
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      setMessage(
+        error instanceof StorageQuotaError
+          ? "Storage full — could not log action."
+          : "Could not log action.",
+      );
+    }
   }
 
-  if (!profile) {
+  if (!hydrated || !profile) {
     return (
       <PageShell staticBackground title="Actions">
         <p className="text-[#f5ede0]/70">Loading…</p>
@@ -42,6 +46,14 @@ export default function ActionsPage() {
       title="Recommended Actions"
       subtitle="Ranked by impact and feasibility for your profile. Your highest-emission categories are prioritized."
     >
+      <div
+        className="mb-6 rounded-2xl border border-white/10 px-4 py-3 text-sm text-white/80"
+        role="status"
+        aria-live="polite"
+      >
+        {message || "Tap Log This Action when you complete a recommendation."}
+      </div>
+
       <ul className="space-y-6">
         {actions.map((action, index) => (
           <li key={action.id} className="glass-card rounded-3xl p-8">

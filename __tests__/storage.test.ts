@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_QUIZ_ANSWERS } from "@/lib/constants";
+import { calculateProfileFromQuiz } from "@/lib/emissions";
 import {
   addLog,
   getLogs,
@@ -10,6 +11,9 @@ import {
   StorageQuotaError,
 } from "@/lib/storage";
 import type { FootprintProfile } from "@/lib/types";
+
+const PROFILE_ID = "b0000000-0000-4000-8000-000000000001";
+const LOG_ID = "c0000000-0000-4000-8000-000000000001";
 
 function createStorageMock() {
   const store = new Map<string, string>();
@@ -22,18 +26,8 @@ function createStorageMock() {
 }
 
 const validProfile: FootprintProfile = {
-  id: "profile-1",
+  ...calculateProfileFromQuiz(DEFAULT_QUIZ_ANSWERS, PROFILE_ID),
   createdAt: "2026-06-08T00:00:00.000Z",
-  answers: DEFAULT_QUIZ_ANSWERS,
-  annualKgCo2: 5000,
-  monthlyKgCo2: 416.7,
-  breakdown: [
-    { category: "transport", kgCo2PerYear: 2000, percentage: 40 },
-    { category: "diet", kgCo2PerYear: 1000, percentage: 20 },
-    { category: "energy", kgCo2PerYear: 800, percentage: 16 },
-    { category: "shopping", kgCo2PerYear: 700, percentage: 14 },
-    { category: "waste", kgCo2PerYear: 500, percentage: 10 },
-  ],
 };
 
 describe("storage", () => {
@@ -56,6 +50,7 @@ describe("storage", () => {
   it("returns null for corrupt profile JSON", () => {
     localStorage.setItem("canopy-profile", "{ not valid json");
     expect(getProfile()).toBeNull();
+    expect(localStorage.getItem("canopy-profile")).toBeNull();
   });
 
   it("rejects profile data that fails Zod validation", () => {
@@ -71,6 +66,7 @@ describe("storage", () => {
       }),
     );
     expect(getProfile()).toBeNull();
+    expect(localStorage.getItem("canopy-profile")).toBeNull();
   });
 
   it("filters invalid log entries and keeps valid ones", () => {
@@ -78,7 +74,7 @@ describe("storage", () => {
       "canopy-logs",
       JSON.stringify([
         {
-          id: "ok",
+          id: LOG_ID,
           date: "2026-06-08T12:00:00.000Z",
           actionId: "bike-instead",
           label: "Biked",
@@ -94,9 +90,40 @@ describe("storage", () => {
     expect(logs[0].actionId).toBe("bike-instead");
   });
 
+  it("purges logs with unknown action ids", () => {
+    localStorage.setItem(
+      "canopy-logs",
+      JSON.stringify([
+        {
+          id: LOG_ID,
+          date: "2026-06-08T12:00:00.000Z",
+          actionId: "not-a-real-action",
+          label: "Bad",
+          kgCo2Delta: -1,
+        },
+      ]),
+    );
+
+    expect(getLogs()).toHaveLength(0);
+    expect(localStorage.getItem("canopy-logs")).toBeNull();
+  });
+
   it("round-trips a valid profile through save and read", () => {
     saveProfile(validProfile);
-    expect(getProfile()).toEqual(validProfile);
+    expect(getProfile()?.id).toBe(PROFILE_ID);
+    expect(getProfile()?.annualKgCo2).toBe(validProfile.annualKgCo2);
+  });
+
+  it("recomputes tampered footprint totals on save", () => {
+    saveProfile({
+      ...validProfile,
+      annualKgCo2: 100,
+      monthlyKgCo2: 10,
+    });
+
+    const profile = getProfile();
+    expect(profile?.annualKgCo2).toBe(validProfile.annualKgCo2);
+    expect(profile?.monthlyKgCo2).toBe(validProfile.monthlyKgCo2);
   });
 
   it("creates a profile from quiz answers", () => {
@@ -121,7 +148,7 @@ describe("storage", () => {
   it("rejects invalid log payloads on write", () => {
     expect(() =>
       addLog({
-        actionId: "x".repeat(80),
+        actionId: "unknown-action" as "bike-instead",
         label: "Bad",
         kgCo2Delta: -1,
       }),
@@ -130,9 +157,9 @@ describe("storage", () => {
 
   it("caps stored logs at 500 entries", () => {
     const logs = Array.from({ length: 505 }, (_, index) => ({
-      id: `log-${index}`,
+      id: `d0000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
       date: "2026-06-08T12:00:00.000Z",
-      actionId: "bike-instead",
+      actionId: "bike-instead" as const,
       label: "Biked",
       kgCo2Delta: -2.1,
     }));

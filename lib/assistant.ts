@@ -47,7 +47,11 @@ export function getTopAction(context: AssistantContext): ActionRecommendation {
     score: scoreAction(action, context),
   })).sort((a, b) => b.score - a.score);
 
-  return scored[0];
+  const top = scored[0];
+  if (!top) {
+    throw new Error("No recommended actions configured");
+  }
+  return top;
 }
 
 export function getPersonalizedActions(

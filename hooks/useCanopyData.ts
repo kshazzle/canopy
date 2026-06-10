@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { getInsights, getPersonalizedActions } from "@/lib/assistant";
 import {
   aggregateDailyLogs,
@@ -9,7 +9,7 @@ import {
   getFootprintScore,
   toEquivalents,
 } from "@/lib/emissions";
-import { getLogs, getProfile } from "@/lib/storage";
+import { getCompletedActionIds, getLogs, getProfile } from "@/lib/storage";
 import type { AssistantContext, DailyLog, FootprintProfile } from "@/lib/types";
 
 type CanopySnapshot = {
@@ -81,14 +81,8 @@ export function useCanopyData() {
     getServerSnapshot,
   );
 
-  const refresh = useCallback(() => {
-    notifyCanopyUpdate();
-  }, []);
-
-  const ready = profile !== null || logs.length > 0;
-
   const completedActions = useMemo(
-    () => [...new Set(logs.map((log) => log.actionId))],
+    () => getCompletedActionIds(logs),
     [logs],
   );
 
@@ -132,9 +126,6 @@ export function useCanopyData() {
   return {
     profile,
     logs,
-    ready,
-    refresh,
-    context,
     aggregate,
     insights,
     actions,

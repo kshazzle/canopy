@@ -1,41 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { ActionChip } from "@/components/ActionChip";
 import { GlassButton } from "@/components/GlassButton";
 import { PageShell } from "@/components/PageShell";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
-import { TRACKABLE_ACTIONS } from "@/lib/constants";
-import { addLog } from "@/lib/storage";
+import { TRACKABLE_ACTIONS, VEHICLE_EMISSION_FACTORS } from "@/lib/constants";
+import { addLog, StorageQuotaError } from "@/lib/storage";
 import { useCanopyData } from "@/hooks/useCanopyData";
-import { useHydrated } from "@/hooks/useHydrated";
+import { useRequireProfile } from "@/hooks/useRequireProfile";
 
 export default function TrackPage() {
-  const router = useRouter();
-  const hydrated = useHydrated();
   const { profile, logs } = useCanopyData();
+  const { hydrated } = useRequireProfile();
   const [customKm, setCustomKm] = useState(10);
   const [message, setMessage] = useState("");
 
-  useEffect(() => {
-    if (!hydrated || profile) return;
-    router.replace("/onboarding");
-  }, [hydrated, profile, router]);
-
   function logAction(actionId: string, label: string, kgCo2Delta: number) {
-    addLog({ actionId, label, kgCo2Delta });
-    setMessage(`Logged: ${label}`);
-    setTimeout(() => setMessage(""), 3000);
+    try {
+      addLog({ actionId, label, kgCo2Delta });
+      setMessage(`Logged: ${label}`);
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      setMessage(
+        error instanceof StorageQuotaError
+          ? "Storage full — could not log action."
+          : "Could not log action.",
+      );
+    }
   }
 
   function logCustomDistance() {
+    if (!profile) return;
     const km = Math.min(500, Math.max(0, customKm));
-    const saved = -(km * 0.21);
+    const kgPerKm = VEHICLE_EMISSION_FACTORS[profile.answers.vehicleType];
+    const saved = -(km * kgPerKm);
     logAction("custom-distance", `Saved ${km} km of driving`, saved);
   }
 
-  if (!profile) {
+  if (!hydrated || !profile) {
     return (
       <PageShell staticBackground title="Track">
         <p className="text-[#f5ede0]/70">Loading…</p>
@@ -88,7 +91,10 @@ export default function TrackPage() {
               min={0}
               max={500}
               value={customKm}
-              onChange={(e) => setCustomKm(Number(e.target.value))}
+              onChange={(e) => {
+                const next = Number(e.target.value);
+                setCustomKm(Number.isFinite(next) ? next : 0);
+              }}
               className="focus-ring mt-2 w-32 rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-white"
             />
           </div>

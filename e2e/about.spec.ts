@@ -11,7 +11,8 @@ test.describe("About page", () => {
     await expect(page.getByRole("heading", { name: "Our Mission" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "How the Assistant Works" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Data & Privacy" })).toBeVisible();
-    await expect(page.getByText(/All data stays in your browser/)).toBeVisible();
+    await expect(page.getByText(/stay in your browser/)).toBeVisible();
+    await expect(page.getByText(/cookieless page analytics/i)).toBeVisible();
   });
 
   test("uses cinematic hero background video", async ({ page }) => {

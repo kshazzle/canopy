@@ -6,7 +6,7 @@ export const QUIZ_STEPS = 10;
 
 /** Precomputed from DEFAULT_QUIZ_ANSWERS via calculateProfileFromQuiz */
 export const SEED_PROFILE = {
-  id: "e2e-profile",
+  id: "a0000000-0000-4000-8000-000000000001",
   createdAt: "2026-06-08T16:43:52.449Z",
   answers: {
     carKmPerWeek: 100,

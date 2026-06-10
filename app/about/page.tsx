@@ -31,9 +31,11 @@ export default function AboutPage() {
         <section className="glass-card rounded-3xl p-8">
           <h2 className="font-display text-2xl text-white">Data & Privacy</h2>
           <p className="mt-4 leading-relaxed">
-            All data stays in your browser&apos;s local storage. No accounts, no
-            servers, no tracking. Your footprint profile and action logs never
-            leave your device.
+            Your footprint profile and action logs stay in your browser&apos;s
+            local storage — no accounts and no backend database. We use
+            privacy-friendly, cookieless page analytics (Vercel Web Analytics)
+            to understand aggregate usage; your quiz answers and logs never leave
+            your device.
           </p>
         </section>
       </div>

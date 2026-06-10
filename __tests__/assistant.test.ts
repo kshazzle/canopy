@@ -16,7 +16,7 @@ function buildContext(overrides: Partial<AssistantContext> = {}): AssistantConte
       carKmPerWeek: 400,
       flightsPerYear: 8,
     },
-    "ctx-profile",
+    "d0000000-0000-4000-8000-000000000001",
   );
 
   return {
@@ -59,6 +59,25 @@ describe("getInsights", () => {
     const insights = getInsights(buildContext({ logs }));
     const idleInsight = insights.find((i) => i.type === "idle_user");
     expect(idleInsight).toBeDefined();
+  });
+
+  it("triggers goal proximity when close to monthly reduction target", () => {
+    const profile = calculateProfileFromQuiz(
+      DEFAULT_QUIZ_ANSWERS,
+      "e0000000-0000-4000-8000-000000000001",
+    );
+    const monthlyTarget = profile.monthlyKgCo2 * 0.1;
+    const savedPerLog = (monthlyTarget * 0.95) / 5;
+    const logs: DailyLog[] = Array.from({ length: 5 }, (_, index) => ({
+      id: `f0000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+      date: new Date().toISOString(),
+      actionId: "meatless-meal",
+      label: "Meatless meal",
+      kgCo2Delta: -savedPerLog,
+    }));
+
+    const insights = getInsights(buildContext({ profile, logs }));
+    expect(insights.some((insight) => insight.type === "goal_proximity")).toBe(true);
   });
 
   it("triggers negative trend for net increase in last 7 days", () => {

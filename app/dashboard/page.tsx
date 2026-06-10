@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CategoryBreakdown } from "@/components/CategoryBreakdown";
 import { FootprintGauge } from "@/components/FootprintGauge";
@@ -11,13 +10,13 @@ import { InsightCard } from "@/components/InsightCard";
 import { PageShell } from "@/components/PageShell";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { useCanopyData } from "@/hooks/useCanopyData";
-import { useHydrated } from "@/hooks/useHydrated";
+import { useRequireProfile } from "@/hooks/useRequireProfile";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const hydrated = useHydrated();
   const searchParams = useSearchParams();
   const showReveal = searchParams.get("noticed") === "1";
+  const { hydrated } = useRequireProfile();
 
   const {
     profile,
@@ -26,19 +25,13 @@ export default function DashboardPage() {
     equivalents,
     grade,
     score,
-    context,
   } = useCanopyData();
-
-  useEffect(() => {
-    if (!hydrated || profile) return;
-    router.replace("/onboarding");
-  }, [hydrated, profile, router]);
 
   function completeReveal() {
     router.replace("/dashboard");
   }
 
-  if (!profile || !aggregate || !equivalents || !grade || score === null || !context) {
+  if (!hydrated || !profile || !aggregate || !equivalents || !grade || score === null) {
     return (
       <PageShell staticBackground title="Your Rhythm">
         <p className="text-[#f5ede0]/70">Gathering what we noticed…</p>
@@ -80,9 +73,11 @@ export default function DashboardPage() {
         <p className="mt-2 max-w-xl text-sm text-[#f5ede0]/55">
           Small observations from your assessment — where attention might matter most.
         </p>
-        <div className="mt-6">
-          <InsightCard insight={topInsight} variant="reveal" />
-        </div>
+        {topInsight && (
+          <div className="mt-6">
+            <InsightCard insight={topInsight} variant="reveal" />
+          </div>
+        )}
       </section>
 
       <div className="grid gap-8 lg:grid-cols-2">

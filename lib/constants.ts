@@ -12,7 +12,7 @@ export const VEHICLE_EMISSION_FACTORS: Record<VehicleType, number> = {
 };
 
 export const EMISSION_FACTORS = {
-  carKgPerKm: 0.21,
+  carKgPerKm: VEHICLE_EMISSION_FACTORS.petrol,
   transitKgPerKm: 0.15,
   flightKgPerKm: 0.25,
   flightAvgKm: 1500,
@@ -271,6 +271,14 @@ export const RECOMMENDED_ACTIONS: Omit<
     difficulty: "easy",
   },
 ];
+
+export const KNOWN_ACTION_IDS = [
+  ...TRACKABLE_ACTIONS.map((action) => action.id),
+  ...RECOMMENDED_ACTIONS.map((action) => action.id),
+  "custom-distance",
+] as const;
+
+export type KnownActionId = (typeof KNOWN_ACTION_IDS)[number];
 
 export const DEFAULT_QUIZ_ANSWERS = {
   carKmPerWeek: 100,

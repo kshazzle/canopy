@@ -13,17 +13,19 @@ import {
   QUIZ_QUESTIONS,
 } from "@/lib/constants";
 import type { QuizAnswers } from "@/lib/types";
-import { saveProfileFromQuiz } from "@/lib/storage";
+import { saveProfileFromQuiz, StorageQuotaError } from "@/lib/storage";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<QuizAnswers>(DEFAULT_QUIZ_ANSWERS);
+  const [error, setError] = useState("");
 
   const current = QUIZ_QUESTIONS[step];
   const isLast = step === QUIZ_QUESTIONS.length - 1;
 
   function updateAnswer<K extends keyof QuizAnswers>(id: K, value: QuizAnswers[K]) {
+    setError("");
     setAnswers((prev) => ({
       ...prev,
       [id]: value,
@@ -32,8 +34,16 @@ export default function OnboardingPage() {
 
   function handleNext() {
     if (isLast) {
-      saveProfileFromQuiz(answers);
-      router.push("/dashboard?noticed=1");
+      try {
+        saveProfileFromQuiz(answers);
+        router.push("/dashboard?noticed=1");
+      } catch (caught) {
+        setError(
+          caught instanceof StorageQuotaError
+            ? "Storage is full. Clear site data for this page and try again."
+            : "Could not save your profile. Please try again.",
+        );
+      }
       return;
     }
     setStep((s) => s + 1);
@@ -66,6 +76,12 @@ export default function OnboardingPage() {
         >
           {current.label}
         </h2>
+
+        {error && (
+          <p className="text-center text-sm text-red-300/90" role="alert">
+            {error}
+          </p>
+        )}
 
         {isChoiceQuestion(current) ? (
           <QuizChoiceStep

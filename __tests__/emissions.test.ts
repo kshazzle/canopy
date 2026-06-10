@@ -3,7 +3,9 @@ import {
   aggregateDailyLogs,
   calculateProfileFromQuiz,
   calculateStreak,
+  daysSinceLastLog,
   getFootprintGrade,
+  getFootprintScore,
   getTopCategory,
   toEquivalents,
 } from "@/lib/emissions";
@@ -78,6 +80,19 @@ describe("toEquivalents", () => {
     expect(eq.trees).toBe(200);
     expect(eq.kmDriven).toBe(20000);
     expect(eq.shortFlights).toBe(11);
+  });
+});
+
+describe("getFootprintScore", () => {
+  it("returns higher scores for lower footprints", () => {
+    expect(getFootprintScore(2500)).toBeGreaterThan(getFootprintScore(12000));
+    expect(getFootprintScore(2500)).toBeGreaterThan(80);
+  });
+});
+
+describe("daysSinceLastLog", () => {
+  it("returns infinity when no logs exist", () => {
+    expect(daysSinceLastLog([])).toBe(Infinity);
   });
 });
 
